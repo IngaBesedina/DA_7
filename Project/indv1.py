@@ -2,6 +2,12 @@
 # -*- coding: utf-8 -*-
 
 
+import argparse
+import sqlite3
+import typing as t
+from pathlib import Path
+
+
 """
 Использовать словарь, содержащий следующие ключи: фамилия и инициалы; номер
 группы; успеваемость (список из пяти элементов). Написать программу, выполняющую
@@ -12,12 +18,6 @@
 базе данных SQLite3. Информация в базе данных должна храниться не менее чем в двух
 таблицах.
 """
-
-
-import argparse
-import sqlite3
-import typing as t
-from pathlib import Path
 
 
 def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
@@ -51,7 +51,7 @@ def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
                     idx,
                     student.get('name', ''),
                     student.get('group', ''),
-                    ''.join(str(el) for el in student.get('grades'))
+                    student.get('grades', '')
                 )
             )
         print(line)
@@ -67,7 +67,7 @@ def create_db(database_path: Path) -> None:
     conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
 
-    # Создать таблицу с информацией об оценках.
+    # Создать таблицу с информацией о группах.
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS groups (
@@ -153,6 +153,15 @@ def select_all(database_path: Path) -> t.List[t.Dict[str, t.Any]]:
     )
     rows = cursor.fetchall()
 
+    data_with_avg = []
+    for row in rows:
+        grades = list(map(int, row[2].split(',')))
+        average = sum(grades) / len(grades)
+        data_with_avg.append((row[0], row[1], row[2], average))
+
+    # Сортировка данных по среднему баллу
+    sorted_data = sorted(data_with_avg, key=lambda x: x[3])
+
     conn.close()
     return [
         {
@@ -160,7 +169,7 @@ def select_all(database_path: Path) -> t.List[t.Dict[str, t.Any]]:
             "group": row[1],
             "grades": row[2],
         }
-        for row in rows
+        for row in sorted_data
     ]
 
 
@@ -168,30 +177,38 @@ def select_students(
     database_path: Path
 ) -> t.List[t.Dict[str, t.Any]]:
     """
-    Выбрать всех работников с периодом работы больше заданного.
+    Выбрать всех студентов, имеющих оценки 4 и 5.
     """
     conn = sqlite3.connect(database_path)
     cursor = conn.cursor()
 
-    # вывод на дисплей фамилий и номеров групп для всех студентов, имеющих оценки 4 и 5
-    cursor.execute(
-        """
+    # вывод на дисплей фамилий и групп для всех студентов, имеющих оценки 4 и 5
+    # Извлечение данных из столбца базы данных
+    cursor.execute("""
         SELECT students.student_name, groups.group_title, students.student_grades
         FROM students
         INNER JOIN groups ON groups.group_id = students.group_id
-        WHERE students.student_grades NOT LIKE '%3%'
-        """
-    )
+        """)
     rows = cursor.fetchall()
 
+    selected_data = []
+    for row in rows:
+        grades = list(map(int, row[2].split(',')))
+        if 2 not in grades and 3 not in grades:
+            average = sum(grades) / len(grades)
+            selected_data.append((row[0], row[1], row[2], average))
+
+    selected_data = sorted(selected_data, key=lambda x: x[3])
+
     conn.close()
+
     return [
         {
             "name": row[0],
             "group": row[1],
             "grades": row[2],
         }
-        for row in rows
+        for row in selected_data
     ]
 
 
@@ -272,7 +289,6 @@ def main(command_line=None):
         display_students(select_all(db_path))
 
     # Выбрать требуемых студентов.
-    # Выбрать требуемых рааботников.
     elif args.command == "select":
         display_students(select_students(db_path))
         pass
