@@ -4,21 +4,22 @@
 
 """
 Вариант 2
-Использовать словарь, содержащий следующие ключи: фамилия и инициалы; номер
-группы; успеваемость (список из пяти элементов). Написать программу, выполняющую
-следующие действия: ввод с клавиатуры данных в список, состоящий из словарей заданной
-структуры; записи должны быть упорядочены по возрастанию среднего балла; вывод на
-дисплей фамилий и номеров групп для всех студентов, имеющих оценки 4 и 5; если таких
-студентов нет, вывести соответствующее сообщение. Необходимо реализовать
-возможность хранения данных в базе данных СУБД PostgreSQL. 
-Информация в базе данных должна храниться не менее чем в двух таблицах.
+Использовать словарь, содержащий следующие ключи: фамилия и инициалы;
+номергруппы; успеваемость (список из пяти элементов).Написать программу,
+выполняющую следующие действия: ввод с клавиатуры данных в список,
+состоящий из словарей заданной структуры; записи должны быть упорядочены
+по возрастанию среднего балла; вывод на дисплей фамилий и номеров групп
+для всех студентов, имеющих оценки 4 и 5; если таких студентов нет,
+вывести соответствующее сообщение. Необходимо реализовать возможность
+хранения данных в базе данных СУБД PostgreSQL.Информация в базе данных
+должна храниться не менее чем в двух таблицах.
 """
 
 
 import argparse
-import psycopg2
-from psycopg2 import sql
 import typing as t
+
+import psycopg2
 
 
 def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
@@ -28,19 +29,13 @@ def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
     # Проверить, что список студентов не пуст.
     if staff:
         # Заголовок таблицы.
-        line = '+-{}-+-{}-+-{}-+-{}-+'.format(
-            '-' * 4,
-            '-' * 30,
-            '-' * 20,
-            '-' * 14
+        line = "+-{}-+-{}-+-{}-+-{}-+".format(
+            "-" * 4, "-" * 30, "-" * 20, "-" * 14
         )
         print(line)
         print(
-            '| {:^4} | {:^30} | {:^20} | {:^14} |'.format(
-                "№",
-                "Ф.И.О.",
-                "Группа",
-                "Оценки"
+            "| {:^4} | {:^30} | {:^20} | {:^14} |".format(
+                "№", "Ф.И.О.", "Группа", "Оценки"
             )
         )
         print(line)
@@ -48,11 +43,11 @@ def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
         # Вывести данные о всех студентах.
         for idx, student in enumerate(staff, 1):
             print(
-                '| {:>4} | {:<30} | {:<20} | {:>14} |'.format(
+                "| {:>4} | {:<30} | {:<20} | {:>14} |".format(
                     idx,
-                    student.get('name', ''),
-                    student.get('group', ''),
-                    student.get('grades', '')
+                    student.get("name", ""),
+                    student.get("group", ""),
+                    student.get("grades", ""),
                 )
             )
         print(line)
@@ -65,14 +60,17 @@ def create_db(db_name) -> None:
     """
     Создать базу данных.
     """
-    conn = psycopg2.connect(dbname='postgres', user='postgres', 
-                            password='1111', host='localhost')
-    
+    conn = psycopg2.connect(
+        dbname="postgres", user="postgres", password="1111", host="localhost"
+    )
+
     conn.autocommit = True
 
     cur = conn.cursor()
 
-    cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (db_name,))
+    cur.execute(
+        "SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s", (db_name,)
+    )
     exists = cur.fetchone()
 
     if not exists:
@@ -81,9 +79,10 @@ def create_db(db_name) -> None:
     cur.close()
     conn.close()
 
-    conn = psycopg2.connect(dbname=db_name, user='postgres', 
-                            password='1111', host='localhost')
-    
+    conn = psycopg2.connect(
+        dbname=db_name, user="postgres", password="1111", host="localhost"
+    )
+
     cur = conn.cursor()
 
     # Создать таблицу с информацией о группах.
@@ -111,21 +110,17 @@ def create_db(db_name) -> None:
 
     cur.close()
     conn.close()
-    
 
-def add_student(
-    db_name: str,
-    name: str,
-    group: str,
-    grades: str
-) -> None:
+
+def add_student(db_name: str, name: str, group: str, grades: str) -> None:
     """
     Добавить студента в базу данных.
     """
-    conn = psycopg2.connect(dbname=db_name, user='postgres', 
-                            password='1111', host='localhost')
+    conn = psycopg2.connect(
+        dbname=db_name, user="postgres", password="1111", host="localhost"
+    )
     conn.autocommit = True
-    
+
     cursor = conn.cursor()
 
     # Получить идентификатор группы в базе данных.
@@ -133,27 +128,29 @@ def add_student(
     cursor.execute(
         """
         SELECT group_id FROM groups WHERE group_title = %s
-        """, (group,)
+        """,
+        (group,),
     )
     row = cursor.fetchone()
     if row is None:
         cursor.execute(
             """
-            INSERT INTO groups (group_title) VALUES (%s) 
+            INSERT INTO groups (group_title) VALUES (%s)
             RETURNING group_id
-            """, (group,)
+            """,
+            (group,),
         )
         group_id = cursor.fetchone()[0]
     else:
         group_id = row[0]
-        
 
     # Добавить информацию о новом студенте.
     cursor.execute(
         """
         INSERT INTO students (student_name, group_id, student_grades)
         VALUES (%s, %s, %s)
-        """, (name, group_id, grades)
+        """,
+        (name, group_id, grades),
     )
     conn.commit()
 
@@ -165,14 +162,15 @@ def select_all(db_name) -> t.List[t.Dict[str, t.Any]]:
     """
     Выбрать всех студентов.
     """
-    conn = psycopg2.connect(dbname=db_name, user='postgres', 
-                            password='1111', host='localhost')
+    conn = psycopg2.connect(
+        dbname=db_name, user="postgres", password="1111", host="localhost"
+    )
     cursor = conn.cursor()
 
     cursor.execute(
         """
-        SELECT students.student_name, groups.group_title, students.student_grades
-        FROM students
+        SELECT students.student_name, groups.group_title,
+        students.student_grades FROM students
         INNER JOIN groups ON groups.group_id = students.group_id
         """
     )
@@ -180,7 +178,7 @@ def select_all(db_name) -> t.List[t.Dict[str, t.Any]]:
 
     data_with_avg = []
     for row in rows:
-        grades = list(map(int, row[2].split(',')))
+        grades = list(map(int, row[2].split(",")))
         average = sum(grades) / len(grades)
         data_with_avg.append((row[0], row[1], row[2], average))
 
@@ -204,22 +202,25 @@ def select_students(db_name) -> t.List[t.Dict[str, t.Any]]:
     """
     Выбрать всех студентов, имеющих оценки 4 и 5.
     """
-    conn = psycopg2.connect(dbname=db_name, user='postgres', 
-                            password='1111', host='localhost')
+    conn = psycopg2.connect(
+        dbname=db_name, user="postgres", password="1111", host="localhost"
+    )
     cursor = conn.cursor()
 
     # вывод на дисплей фамилий и групп для всех студентов, имеющих оценки 4 и 5
     # Извлечение данных из столбца базы данных
-    cursor.execute("""
-        SELECT students.student_name, groups.group_title, students.student_grades
-        FROM students
+    cursor.execute(
+        """
+        SELECT students.student_name, groups.group_title,
+        students.student_grades FROM students
         INNER JOIN groups ON groups.group_id = students.group_id
-        """)
+        """
+    )
     rows = cursor.fetchall()
 
     selected_data = []
     for row in rows:
-        grades = list(map(int, row[2].split(',')))
+        grades = list(map(int, row[2].split(",")))
         if 2 not in grades and 3 not in grades:
             average = sum(grades) / len(grades)
             selected_data.append((row[0], row[1], row[2], average))
@@ -243,60 +244,43 @@ def main(command_line=None):
     # Создать родительский парсер для определения имени файла.
     file_parser = argparse.ArgumentParser(add_help=False)
     file_parser.add_argument(
-        "--db",
-        action="store",
-        required=True,
-        help="The database file name"
+        "--db", action="store", required=True, help="The database file name"
     )
 
     # Создать основной парсер командной строки.
     parser = argparse.ArgumentParser("students")
     parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 0.1.0"
+        "--version", action="version", version="%(prog)s 0.1.0"
     )
 
     subparsers = parser.add_subparsers(dest="command")
 
     # Создать субпарсер для добавления студента.
     add = subparsers.add_parser(
-        "add",
-        parents=[file_parser],
-        help="Add a new student"
+        "add", parents=[file_parser], help="Add a new student"
     )
     add.add_argument(
         "-n",
         "--name",
         action="store",
         required=True,
-        help="The student's name"
+        help="The student's name",
     )
     add.add_argument(
-        "-g",
-        "--group",
-        action="store",
-        help="The student's group"
+        "-g", "--group", action="store", help="The student's group"
     )
     add.add_argument(
-        "--grades",
-        action="store",
-        required=True,
-        help="Grades received"
+        "--grades", action="store", required=True, help="Grades received"
     )
 
     # Создать субпарсер для отображения всех студентов.
     _ = subparsers.add_parser(
-        "display",
-        parents=[file_parser],
-        help="Display all students"
+        "display", parents=[file_parser], help="Display all students"
     )
 
     # Создать субпарсер для выбора студентов.
     _ = subparsers.add_parser(
-        "select",
-        parents=[file_parser],
-        help="Select the students"
+        "select", parents=[file_parser], help="Select the students"
     )
 
     # Выполнить разбор аргументов командной строки.

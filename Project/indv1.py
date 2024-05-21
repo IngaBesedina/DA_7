@@ -10,14 +10,14 @@ from pathlib import Path
 
 """
 Вариант 2
-Использовать словарь, содержащий следующие ключи: фамилия и инициалы; номер
-группы; успеваемость (список из пяти элементов). Написать программу, выполняющую
-следующие действия: ввод с клавиатуры данных в список, состоящий из словарей заданной
-структуры; записи должны быть упорядочены по возрастанию среднего балла; вывод на
-дисплей фамилий и номеров групп для всех студентов, имеющих оценки 4 и 5; если таких
-студентов нет, вывести соответствующее сообщение. Реализовать хранение данных в
-базе данных SQLite3. Информация в базе данных должна храниться не менее чем в двух
-таблицах.
+Использовать словарь, содержащий следующие ключи: фамилия и инициалы;
+номер группы; успеваемость(список из пяти элементов).Написать программу,
+выполняющую следующие действия: ввод с клавиатуры данных в список, состоящий
+из словарей заданной структуры; записи должны быть упорядочены по возрастанию
+среднего балла; вывод на дисплей фамилий и номеров групп для всех студентов,
+имеющих оценки 4 и 5; если таких студентов нет, вывести соответствующее
+сообщение.Реализовать хранение данных в базе данных SQLite3.
+Информация в базе данных должна храниться не менее чем в двух таблицах.
 """
 
 
@@ -28,19 +28,13 @@ def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
     # Проверить, что список студентов не пуст.
     if staff:
         # Заголовок таблицы.
-        line = '+-{}-+-{}-+-{}-+-{}-+'.format(
-            '-' * 4,
-            '-' * 30,
-            '-' * 20,
-            '-' * 14
+        line = "+-{}-+-{}-+-{}-+-{}-+".format(
+            "-" * 4, "-" * 30, "-" * 20, "-" * 14
         )
         print(line)
         print(
-            '| {:^4} | {:^30} | {:^20} | {:^14} |'.format(
-                "№",
-                "Ф.И.О.",
-                "Группа",
-                "Оценки"
+            "| {:^4} | {:^30} | {:^20} | {:^14} |".format(
+                "№", "Ф.И.О.", "Группа", "Оценки"
             )
         )
         print(line)
@@ -48,11 +42,11 @@ def display_students(staff: t.List[t.Dict[str, t.Any]]) -> None:
         # Вывести данные о всех студентах.
         for idx, student in enumerate(staff, 1):
             print(
-                '| {:>4} | {:<30} | {:<20} | {:>14} |'.format(
+                "| {:>4} | {:<30} | {:<20} | {:>14} |".format(
                     idx,
-                    student.get('name', ''),
-                    student.get('group', ''),
-                    student.get('grades', '')
+                    student.get("name", ""),
+                    student.get("group", ""),
+                    student.get("grades", ""),
                 )
             )
         print(line)
@@ -93,10 +87,7 @@ def create_db(database_path: Path) -> None:
 
 
 def add_student(
-    database_path: Path,
-    name: str,
-    group: str,
-    grades: str
+    database_path: Path, name: str, group: str, grades: str
 ) -> None:
     """
     Добавить студента в базу данных.
@@ -110,7 +101,7 @@ def add_student(
         """
         SELECT group_id FROM groups WHERE group_title = ?
         """,
-        (group,)
+        (group,),
     )
     row = cursor.fetchone()
     if row is None:
@@ -119,7 +110,7 @@ def add_student(
             """
             INSERT INTO groups (group_title) VALUES (?)
             """,
-            (group,)
+            (group,),
         )
         group_id = cursor.lastrowid
     else:
@@ -131,7 +122,7 @@ def add_student(
         INSERT INTO students (student_name, group_id, student_grades)
         VALUES (?, ?, ?)
         """,
-        (name, group_id, grades)
+        (name, group_id, grades),
     )
 
     conn.commit()
@@ -147,8 +138,8 @@ def select_all(database_path: Path) -> t.List[t.Dict[str, t.Any]]:
 
     cursor.execute(
         """
-        SELECT students.student_name, groups.group_title, students.student_grades
-        FROM students
+        SELECT students.student_name, groups.group_title,
+        students.student_grades FROM students
         INNER JOIN groups ON groups.group_id = students.group_id
         """
     )
@@ -156,7 +147,7 @@ def select_all(database_path: Path) -> t.List[t.Dict[str, t.Any]]:
 
     data_with_avg = []
     for row in rows:
-        grades = list(map(int, row[2].split(',')))
+        grades = list(map(int, row[2].split(",")))
         average = sum(grades) / len(grades)
         data_with_avg.append((row[0], row[1], row[2], average))
 
@@ -174,9 +165,7 @@ def select_all(database_path: Path) -> t.List[t.Dict[str, t.Any]]:
     ]
 
 
-def select_students(
-    database_path: Path
-) -> t.List[t.Dict[str, t.Any]]:
+def select_students(database_path: Path) -> t.List[t.Dict[str, t.Any]]:
     """
     Выбрать всех студентов, имеющих оценки 4 и 5.
     """
@@ -185,16 +174,18 @@ def select_students(
 
     # вывод на дисплей фамилий и групп для всех студентов, имеющих оценки 4 и 5
     # Извлечение данных из столбца базы данных
-    cursor.execute("""
-        SELECT students.student_name, groups.group_title, students.student_grades
-        FROM students
+    cursor.execute(
+        """
+        SELECT students.student_name, groups.group_title,
+        students.student_grades FROM students
         INNER JOIN groups ON groups.group_id = students.group_id
-        """)
+        """
+    )
     rows = cursor.fetchall()
 
     selected_data = []
     for row in rows:
-        grades = list(map(int, row[2].split(',')))
+        grades = list(map(int, row[2].split(",")))
         if 2 not in grades and 3 not in grades:
             average = sum(grades) / len(grades)
             selected_data.append((row[0], row[1], row[2], average))
@@ -221,57 +212,43 @@ def main(command_line=None):
         action="store",
         required=False,
         default=str(Path.home() / "students.db"),
-        help="The database file name"
+        help="The database file name",
     )
 
     # Создать основной парсер командной строки.
     parser = argparse.ArgumentParser("students")
     parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s 0.1.0"
+        "--version", action="version", version="%(prog)s 0.1.0"
     )
 
     subparsers = parser.add_subparsers(dest="command")
 
     # Создать субпарсер для добавления студента.
     add = subparsers.add_parser(
-        "add",
-        parents=[file_parser],
-        help="Add a new student"
+        "add", parents=[file_parser], help="Add a new student"
     )
     add.add_argument(
         "-n",
         "--name",
         action="store",
         required=True,
-        help="The student's name"
+        help="The student's name",
     )
     add.add_argument(
-        "-g",
-        "--group",
-        action="store",
-        help="The student's group"
+        "-g", "--group", action="store", help="The student's group"
     )
     add.add_argument(
-        "--grades",
-        action="store",
-        required=True,
-        help="Grades received"
+        "--grades", action="store", required=True, help="Grades received"
     )
 
     # Создать субпарсер для отображения всех студентов.
     _ = subparsers.add_parser(
-        "display",
-        parents=[file_parser],
-        help="Display all students"
+        "display", parents=[file_parser], help="Display all students"
     )
 
     # Создать субпарсер для выбора студентов.
-    select = subparsers.add_parser(
-        "select",
-        parents=[file_parser],
-        help="Select the students"
+    _ = subparsers.add_parser(
+        "select", parents=[file_parser], help="Select the students"
     )
 
     # Выполнить разбор аргументов командной строки.
